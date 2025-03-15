@@ -13,18 +13,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function AddMeetingRoomDialog({ onSuccess }) {
+export function AddMeetingRoomDialog({ onSuccess }: { onSuccess: () => void }) {
   // State to manage the form inputs
-  const [newMeeetingRoom, setNewMeeetingRoom] = useState({ name: "" });
+  const [newMeeetingRoom, setNewMeeetingRoom] = useState<{ name: string }>({
+    name: "",
+  });
 
   // State to manage dialog visibility
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
   // State for validation error message
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   // Handle changes to the input fields
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewMeeetingRoom((prevMeetingRoom) => ({
       ...prevMeetingRoom,
@@ -33,7 +35,7 @@ export function AddMeetingRoomDialog({ onSuccess }) {
   };
 
   // Handle form submission
-  const handleAddUser = async (e) => {
+  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Prevent default form submission behavior
 
     // Validation: Check if fields are empty
@@ -42,7 +44,7 @@ export function AddMeetingRoomDialog({ onSuccess }) {
       return; // Exit the function if validation fails
     }
 
-    const res = await fetch("/api/meetingrooms", {
+    await fetch("/api/meetingrooms", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

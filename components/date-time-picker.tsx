@@ -15,12 +15,12 @@ import {
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export function DateTimePicker({
-    value,
-    onChange,
-  }: {
-    value: Date | undefined;
-    onChange: (date: Date | undefined) => void;
-  }) {
+  value,
+  onChange,
+}: {
+  value: Date | undefined | null;
+  onChange: (date: Date | undefined | null) => void;
+}) {
   const [date, setDate] = React.useState<Date>();
   const [isOpen, setIsOpen] = React.useState(false);
 

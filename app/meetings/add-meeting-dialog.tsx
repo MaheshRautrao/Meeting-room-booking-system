@@ -22,10 +22,26 @@ import {
 import { DateTimePicker } from "../../components/date-time-picker";
 import { CalendarDays } from "lucide-react";
 import { MultiSelect } from "@/components/multi-select";
+import { MeetingRoom } from "@/datatable/meeting-rooms";
+import { User } from "@/datatable/users";
 
-export default function AddMeetingDialog({ onSuccess, users, meetingRooms }) {
+export default function AddMeetingDialog({
+  onSuccess,
+  users,
+  meetingRooms,
+}: {
+  onSuccess: () => void;
+  users: User[]; // Replace 'any[]' with a proper user type if available
+  meetingRooms: MeetingRoom[]; // Replace 'any[]' with a proper meeting room type if available
+}) {
   // State to manage the form inputs
-  const [newMeeting, setNewMeeting] = useState({
+  const [newMeeting, setNewMeeting] = useState<{
+    title: string;
+    users: string[];
+    startTime: Date | null | undefined;
+    endTime: Date | null | undefined;
+    meetingroom: string;
+  }>({
     title: "",
     users: [],
     startTime: null,
@@ -40,22 +56,14 @@ export default function AddMeetingDialog({ onSuccess, users, meetingRooms }) {
   const [error, setError] = useState("");
 
   // Handle changes to the title fields
-  const handleTitleChange = (e) => {
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMeeting((prevMeeting) => ({
       ...prevMeeting,
       title: e.target.value,
     }));
   };
 
-  // Handle single-select for users
-  const handleUserChange = (value) => {
-    setNewMeeting((prevMeeting) => ({
-      ...prevMeeting,
-      user: value,
-    }));
-  };
-
-  const handleUsersChange = (selectedUsers) => {
+  const handleUsersChange = (selectedUsers: string[]) => {
     setNewMeeting((prev) => ({ ...prev, users: selectedUsers }));
   };
 
@@ -67,7 +75,7 @@ export default function AddMeetingDialog({ onSuccess, users, meetingRooms }) {
     }));
   };
 
-  const handleStartTimeChange = (date: Date | null) => {
+  const handleStartTimeChange = (date: Date | null | undefined) => {
     if (!date) return; // Ensure we don't set an invalid date
     setNewMeeting((prevMeeting) => ({
       ...prevMeeting,
@@ -75,7 +83,7 @@ export default function AddMeetingDialog({ onSuccess, users, meetingRooms }) {
     }));
   };
 
-  const handleEndTimeChange = (date: Date | null) => {
+  const handleEndTimeChange = (date: Date | null | undefined) => {
     if (!date) return; // Ensure we don't set an invalid date
     setNewMeeting((prevMeeting) => ({
       ...prevMeeting,
@@ -83,7 +91,7 @@ export default function AddMeetingDialog({ onSuccess, users, meetingRooms }) {
     }));
   };
   // Handle form submission
-  const handleAddMeeting = async (e) => {
+  const handleAddMeeting = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Prevent default form submission behavior
 
     // Collect validation errors
@@ -122,7 +130,7 @@ export default function AddMeetingDialog({ onSuccess, users, meetingRooms }) {
       return;
     }
 
-    const res = await fetch("/api/meetings", {
+    await fetch("/api/meetings", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -211,7 +219,6 @@ export default function AddMeetingDialog({ onSuccess, users, meetingRooms }) {
                 Meeting Room
               </Label>
               <Select
-                id="meetingroom"
                 name="meetingroom"
                 value={newMeeting.meetingroom}
                 onValueChange={handleMeetingRoomChange}

@@ -13,18 +13,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function AddUserDialog({ onSuccess }) {
+export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
   // State to manage the form inputs
-  const [newUser, setNewUser] = useState({ name: "", employeeCode: "" });
+  const [newUser, setNewUser] = useState<{
+    name: string;
+    employeeCode: string;
+  }>({ name: "", employeeCode: "" });
 
   // State to manage dialog visibility
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
   // State for validation error message
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   // Handle changes to the input fields
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewUser((prevUser) => ({
       ...prevUser,
@@ -33,7 +36,7 @@ export function AddUserDialog({ onSuccess }) {
   };
 
   // Handle form submission
-  const handleAddUser = async (e) => {
+  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Prevent default form submission behavior
 
     // Validation: Check if fields are empty
@@ -42,7 +45,7 @@ export function AddUserDialog({ onSuccess }) {
       return; // Exit the function if validation fails
     }
 
-    const res = await fetch("/api/users", {
+    await fetch("/api/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
