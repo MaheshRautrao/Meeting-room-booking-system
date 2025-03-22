@@ -26,6 +26,9 @@ export function AddMeetingRoomDialog({ onSuccess }: { onSuccess: () => void }) {
   // State for validation error message
   const [error, setError] = useState<string>("");
 
+  // State for tracking API request status
+  const [loading, setLoading] = useState<boolean>(false);
+
   // Handle changes to the input fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMeetingRoom((prev) => ({
@@ -43,6 +46,8 @@ export function AddMeetingRoomDialog({ onSuccess }: { onSuccess: () => void }) {
       setError("Meeting room name is required.");
       return;
     }
+
+    setLoading(true); // ✅ Disable button while submitting
 
     try {
       const response = await fetch("/api/meetingrooms", {
@@ -64,6 +69,8 @@ export function AddMeetingRoomDialog({ onSuccess }: { onSuccess: () => void }) {
       onSuccess(); // Trigger re-fetch
     } catch (err: any) {
       toast.error(err.message || "Something went wrong!"); // Show error toast
+    } finally {
+      setLoading(false); // ✅ Re-enable button after request completes
     }
   };
 
@@ -85,11 +92,14 @@ export function AddMeetingRoomDialog({ onSuccess }: { onSuccess: () => void }) {
                 name="name"
                 value={newMeetingRoom.name}
                 onChange={handleChange}
+                disabled={loading} // ✅ Disable input when submitting
               />
             </div>
             {error && <div className="text-red-500 text-sm">{error}</div>}
             <DialogFooter>
-              <Button type="submit">Add Meeting Room</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Adding..." : "Add Meeting Room"}
+              </Button>
             </DialogFooter>
           </form>
         </div>

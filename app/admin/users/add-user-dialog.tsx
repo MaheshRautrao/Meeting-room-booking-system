@@ -31,6 +31,7 @@ export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
     name?: string;
     employeeCode?: string;
   }>({});
+  const [loading, setLoading] = useState<boolean>(false); // ✅ Loading state
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewUser((prev) => ({
@@ -64,6 +65,8 @@ export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
 
+    setLoading(true); // ✅ Disable button while submitting
+
     try {
       const response = await fetch("/api/users", {
         method: "POST",
@@ -84,6 +87,8 @@ export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
       onSuccess();
     } catch (err: any) {
       toast.error(err.message || "Something went wrong!");
+    } finally {
+      setLoading(false); // ✅ Re-enable button after request completes
     }
   };
 
@@ -106,6 +111,7 @@ export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
                 name="name"
                 value={newUser.name}
                 onChange={handleChange}
+                disabled={loading} // ✅ Disable input while submitting
               />
               {errors.name && (
                 <div className="text-red-500 text-sm">{errors.name}</div>
@@ -120,6 +126,7 @@ export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
                 name="employeeCode"
                 value={newUser.employeeCode}
                 onChange={handleChange}
+                disabled={loading} // ✅ Disable input while submitting
               />
               {errors.employeeCode && (
                 <div className="text-red-500 text-sm">
@@ -129,7 +136,9 @@ export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
             </div>
 
             <DialogFooter>
-              <Button type="submit">Add User</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Adding..." : "Add User"}
+              </Button>
             </DialogFooter>
           </form>
         </div>

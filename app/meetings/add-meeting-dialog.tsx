@@ -52,6 +52,7 @@ export default function AddMeetingDialog({
 
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // ✅ Loading state
 
   // Handle form submission
   const handleAddMeeting = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -76,6 +77,8 @@ export default function AddMeetingDialog({
       setError(errors.join(", "));
       return;
     }
+
+    setLoading(true); // ✅ Disable button while submitting
 
     try {
       const response = await fetch("/api/meetings", {
@@ -104,6 +107,8 @@ export default function AddMeetingDialog({
       onSuccess();
     } catch (err: any) {
       toast.error(err.message || "Something went wrong!");
+    } finally {
+      setLoading(false); // ✅ Re-enable button after request completes
     }
   };
 
@@ -127,6 +132,7 @@ export default function AddMeetingDialog({
                 onChange={(e) =>
                   setNewMeeting({ ...newMeeting, title: e.target.value })
                 }
+                disabled={loading} // ✅ Prevents editing during submission
               />
             </div>
 
@@ -144,6 +150,7 @@ export default function AddMeetingDialog({
                 placeholder="Select Users"
                 maxCount={3}
                 modalPopover={true}
+                disabled={loading} // ✅ Prevents selection during submission
               />
             </div>
 
@@ -155,6 +162,7 @@ export default function AddMeetingDialog({
                 onValueChange={(value) =>
                   setNewMeeting({ ...newMeeting, meetingroom: value })
                 }
+                disabled={loading} // ✅ Prevents selection during submission
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
@@ -183,6 +191,7 @@ export default function AddMeetingDialog({
                 onChange={(date) =>
                   setNewMeeting({ ...newMeeting, startTime: date })
                 }
+                disabled={loading} // ✅ Prevents date selection during submission
               />
             </div>
 
@@ -196,12 +205,15 @@ export default function AddMeetingDialog({
                 onChange={(date) =>
                   setNewMeeting({ ...newMeeting, endTime: date })
                 }
+                disabled={loading} // ✅ Prevents date selection during submission
               />
             </div>
 
             {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
             <DialogFooter>
-              <Button type="submit">Add Meeting</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Adding..." : "Add Meeting"}
+              </Button>
             </DialogFooter>
           </form>
         </div>
