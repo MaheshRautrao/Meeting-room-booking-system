@@ -1,7 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 
 export type User = {
-  id: string;
+  _id: string;
   name: string;
   employeeCode: string;
 };

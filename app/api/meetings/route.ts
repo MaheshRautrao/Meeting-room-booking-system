@@ -1,26 +1,36 @@
-import { NextResponse ,NextRequest} from "next/server"; 
-import { readData,writeData } from "@/helper";
+import { NextResponse, NextRequest } from "next/server";
+import connectToDatabase from "@/lib/database/connection";
+import { Meeting } from "@/lib/database/models/meetingModel";
 
-// GET request handler
-export const GET = async (req: NextRequest) => {
+// GET request - Fetch all meetings from MongoDB
+export const GET = async () => {
   try {
-    const data = readData(); // Read the data synchronously
-    return new NextResponse(JSON.stringify(data.meetings), { status: 200 }); // Respond with the data
+    await connectToDatabase(); // Ensure database connection
+    const meetings = await Meeting.find(); // Fetch meetings from DB
+    return NextResponse.json(meetings, { status: 200 });
   } catch (err: any) {
     return new NextResponse(err.message, { status: 500 });
   }
 };
 
-// POST request handler - to add a new user
+// POST request - Add a new meeting to MongoDB
 export const POST = async (req: NextRequest) => {
   try {
-    // Parse the incoming JSON body
-    const newMeeting = await req.json();
-    const data = readData();
-    newMeeting.id = data.meetings.length + 1;
-    data.meetings.push(newMeeting);
-    writeData(data);
-    return new NextResponse(JSON.stringify(newMeeting), { status: 201 });
+    await connectToDatabase(); // Ensure database connection
+
+    const body = await req.json(); // Parse JSON request body
+
+    const newMeeting = new Meeting({
+      title: body.title,
+      users: body.users,
+      startTime: body.startTime,
+      endTime: body.endTime,
+      meetingroom: body.meetingroom,
+    });
+
+    await newMeeting.save(); // Save to MongoDB
+
+    return NextResponse.json(newMeeting, { status: 201 });
   } catch (err: any) {
     return new NextResponse(err.message, { status: 500 });
   }

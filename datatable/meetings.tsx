@@ -8,7 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export type Meeting = {
-  id: string;
+  _id: string;
   title: string;
   users: string[];
   meetingRoom: string;

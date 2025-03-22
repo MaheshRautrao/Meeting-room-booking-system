@@ -12,10 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export function AddMeetingRoomDialog({ onSuccess }: { onSuccess: () => void }) {
   // State to manage the form inputs
-  const [newMeeetingRoom, setNewMeeetingRoom] = useState<{ name: string }>({
+  const [newMeetingRoom, setNewMeetingRoom] = useState<{ name: string }>({
     name: "",
   });
 
@@ -27,34 +28,43 @@ export function AddMeetingRoomDialog({ onSuccess }: { onSuccess: () => void }) {
 
   // Handle changes to the input fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewMeeetingRoom((prevMeetingRoom) => ({
-      ...prevMeetingRoom,
-      [name]: value, // Dynamically update the state field
+    setNewMeetingRoom((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
     }));
   };
 
   // Handle form submission
-  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddMeetingRoom = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Prevent default form submission behavior
 
     // Validation: Check if fields are empty
-    if (!newMeeetingRoom.name) {
-      setError("Name is required.");
-      return; // Exit the function if validation fails
+    if (!newMeetingRoom.name.trim()) {
+      setError("Meeting room name is required.");
+      return;
     }
 
-    await fetch("/api/meetingrooms", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newMeeetingRoom),
-    });
-    onSuccess();
-    setNewMeeetingRoom({ name: "" }); // Clear input fields after successful submission
-    setError("");
-    setIsOpen(false);
+    try {
+      const response = await fetch("/api/meetingrooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMeetingRoom),
+      });
+
+      const result = await response.json(); // Parse JSON response
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to add meeting room"); // Throw error if API fails
+      }
+
+      setNewMeetingRoom({ name: "" }); // Clear input fields
+      setError("");
+      setIsOpen(false);
+      toast.success("Meeting Room created successfully!");
+      onSuccess(); // Trigger re-fetch
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong!"); // Show error toast
+    }
   };
 
   return (
@@ -67,20 +77,17 @@ export function AddMeetingRoomDialog({ onSuccess }: { onSuccess: () => void }) {
           <DialogTitle>Add Meeting Room</DialogTitle>
         </DialogHeader>
         <div className="py-4">
-          <form onSubmit={handleAddUser} className="flex flex-col gap-3">
+          <form onSubmit={handleAddMeetingRoom} className="flex flex-col gap-3">
             <div>
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                name="name" // Bind input field to the "name" state
-                value={newMeeetingRoom.name} // Controlled input
-                onChange={handleChange} // Handle input changes
+                name="name"
+                value={newMeetingRoom.name}
+                onChange={handleChange}
               />
             </div>
-            {/* Display error message if validation fails */}
-            {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+            {error && <div className="text-red-500 text-sm">{error}</div>}
             <DialogFooter>
               <Button type="submit">Add Meeting Room</Button>
             </DialogFooter>

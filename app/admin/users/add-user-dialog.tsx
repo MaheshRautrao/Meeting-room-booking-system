@@ -12,51 +12,79 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+// Regular expression for employee code validation (EMP followed by digits)
+const EMPLOYEE_CODE_REGEX = /^EMP\d+$/;
 
 export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
-  // State to manage the form inputs
   const [newUser, setNewUser] = useState<{
     name: string;
     employeeCode: string;
-  }>({ name: "", employeeCode: "" });
+  }>({
+    name: "",
+    employeeCode: "",
+  });
 
-  // State to manage dialog visibility
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    employeeCode?: string;
+  }>({});
 
-  // State for validation error message
-  const [error, setError] = useState<string>("");
-
-  // Handle changes to the input fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewUser((prevUser) => ({
-      ...prevUser,
-      [name]: value, // Dynamically update the state field
+    setNewUser((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
     }));
+
+    // Clear error when user starts typing
+    setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
   };
 
-  // Handle form submission
   const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault();
 
-    // Validation: Check if fields are empty
-    if (!newUser.name || !newUser.employeeCode) {
-      setError("Both fields are required.");
-      return; // Exit the function if validation fails
+    const validationErrors: { name?: string; employeeCode?: string } = {};
+
+    if (!newUser.name.trim()) {
+      validationErrors.name = "Name is required.";
     }
 
-    await fetch("/api/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newUser),
-    });
+    if (!newUser.employeeCode.trim()) {
+      validationErrors.employeeCode = "Employee code is required.";
+    } else if (!EMPLOYEE_CODE_REGEX.test(newUser.employeeCode)) {
+      validationErrors.employeeCode =
+        "Invalid format. Employee code should be in format EMP followed by numbers (e.g., EMP123).";
+    }
 
-    setNewUser({ name: "", employeeCode: "" }); // Clear input fields after successful submission
-    setError("");
-    setIsOpen(false);
-    onSuccess();
+    // If validation fails, update state and stop form submission
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to add user");
+      }
+
+      setNewUser({ name: "", employeeCode: "" });
+      setErrors({});
+      setIsOpen(false);
+      toast.success("User created successfully!");
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong!");
+    }
   };
 
   return (
@@ -70,31 +98,36 @@ export function AddUserDialog({ onSuccess }: { onSuccess: () => void }) {
         </DialogHeader>
         <div className="py-4">
           <form onSubmit={handleAddUser} className="flex flex-col gap-3">
+            {/* Name Input */}
             <div>
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                name="name" // Bind input field to the "name" state
-                value={newUser.name} // Controlled input
-                onChange={handleChange} // Handle input changes
+                name="name"
+                value={newUser.name}
+                onChange={handleChange}
               />
-            </div>
-            <div>
-              <Label htmlFor="employeeCode" className="text-right">
-                Employee Code
-              </Label>
-              <Input
-                id="employeeCode"
-                name="employeeCode" // Bind input field to the "employeeCode" state
-                value={newUser.employeeCode} // Controlled input
-                onChange={handleChange} // Handle input changes
-              />
+              {errors.name && (
+                <div className="text-red-500 text-sm">{errors.name}</div>
+              )}
             </div>
 
-            {/* Display error message if validation fails */}
-            {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+            {/* Employee Code Input */}
+            <div>
+              <Label htmlFor="employeeCode">Employee Code</Label>
+              <Input
+                id="employeeCode"
+                name="employeeCode"
+                value={newUser.employeeCode}
+                onChange={handleChange}
+              />
+              {errors.employeeCode && (
+                <div className="text-red-500 text-sm">
+                  {errors.employeeCode}
+                </div>
+              )}
+            </div>
+
             <DialogFooter>
               <Button type="submit">Add User</Button>
             </DialogFooter>

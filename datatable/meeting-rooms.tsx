@@ -1,7 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 
 export type MeetingRoom = {
-  id: string;
+  _id: string;
   name: string;
 };
 

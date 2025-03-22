@@ -24,6 +24,7 @@ import { CalendarDays } from "lucide-react";
 import { MultiSelect } from "@/components/multi-select";
 import { MeetingRoom } from "@/datatable/meeting-rooms";
 import { User } from "@/datatable/users";
+import { toast } from "sonner"; // ✅ Import toast for notifications
 
 export default function AddMeetingDialog({
   onSuccess,
@@ -31,8 +32,8 @@ export default function AddMeetingDialog({
   meetingRooms,
 }: {
   onSuccess: () => void;
-  users: User[]; // Replace 'any[]' with a proper user type if available
-  meetingRooms: MeetingRoom[]; // Replace 'any[]' with a proper meeting room type if available
+  users: User[];
+  meetingRooms: MeetingRoom[];
 }) {
   // State to manage the form inputs
   const [newMeeting, setNewMeeting] = useState<{
@@ -49,105 +50,61 @@ export default function AddMeetingDialog({
     meetingroom: "",
   });
 
-  // State to manage dialog visibility
   const [isOpen, setIsOpen] = useState(false);
-
-  // State for validation error message
   const [error, setError] = useState("");
 
-  // Handle changes to the title fields
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewMeeting((prevMeeting) => ({
-      ...prevMeeting,
-      title: e.target.value,
-    }));
-  };
-
-  const handleUsersChange = (selectedUsers: string[]) => {
-    setNewMeeting((prev) => ({ ...prev, users: selectedUsers }));
-  };
-
-  // Handle single-select for meeting rooms
-  const handleMeetingRoomChange = (value: string) => {
-    setNewMeeting((prevMeeting) => ({
-      ...prevMeeting,
-      meetingroom: value,
-    }));
-  };
-
-  const handleStartTimeChange = (date: Date | null | undefined) => {
-    if (!date) return; // Ensure we don't set an invalid date
-    setNewMeeting((prevMeeting) => ({
-      ...prevMeeting,
-      startTime: date,
-    }));
-  };
-
-  const handleEndTimeChange = (date: Date | null | undefined) => {
-    if (!date) return; // Ensure we don't set an invalid date
-    setNewMeeting((prevMeeting) => ({
-      ...prevMeeting,
-      endTime: date,
-    }));
-  };
   // Handle form submission
   const handleAddMeeting = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault();
 
-    // Collect validation errors
     const errors = [];
 
-    // Check if each field is empty
-    if (!newMeeting.title) {
-      errors.push("Title is required.");
+    if (!newMeeting.title) errors.push("Title is required.");
+    if (!newMeeting.users.length) errors.push("At least one user is required.");
+    if (!newMeeting.startTime) errors.push("Start Time is required.");
+    if (!newMeeting.endTime) errors.push("End Time is required.");
+    if (
+      newMeeting.startTime &&
+      newMeeting.endTime &&
+      newMeeting.endTime <= newMeeting.startTime
+    ) {
+      errors.push("End time must be greater than start time.");
     }
+    if (!newMeeting.meetingroom) errors.push("Meeting Room is required.");
 
-    if (!newMeeting.users || newMeeting.users.length === 0)
-      errors.push("At least one user is required.");
-
-    if (!newMeeting.startTime) {
-      errors.push("Start Time is required.");
-    }
-
-    if (!newMeeting.endTime) {
-      errors.push("End Time is required.");
-    }
-
-    // Validate that end time is greater than start time
-    if (newMeeting.startTime && newMeeting.endTime) {
-      if (newMeeting.endTime <= newMeeting.startTime) {
-        errors.push("End time must be greater than start time.");
-      }
-    }
-
-    if (!newMeeting.meetingroom) {
-      errors.push("Meeting Room is required.");
-    }
-
-    // If there are any errors, set them and return
     if (errors.length > 0) {
-      setError(errors.join(", ")); // Combine errors into one message
+      setError(errors.join(", "));
       return;
     }
 
-    await fetch("/api/meetings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newMeeting),
-    });
+    try {
+      const response = await fetch("/api/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMeeting),
+      });
 
-    onSuccess();
-    setNewMeeting({
-      title: "",
-      users: [],
-      startTime: null,
-      endTime: null,
-      meetingroom: "",
-    }); // Clear input fields after successful submission
-    setError(""); // Reset error message if validation is successful
-    setIsOpen(false);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to add meeting");
+      }
+
+      setNewMeeting({
+        title: "",
+        users: [],
+        startTime: null,
+        endTime: null,
+        meetingroom: "",
+      });
+
+      setError("");
+      setIsOpen(false);
+      toast.success("Meeting created successfully!");
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong!");
+    }
   };
 
   return (
@@ -161,42 +118,17 @@ export default function AddMeetingDialog({
         </DialogHeader>
         <div className="py-4">
           <form onSubmit={handleAddMeeting} className="flex flex-col gap-5">
-            {/* Title Input */}
             <div className="items-center gap-4">
-              <Label htmlFor="title" className="text-right flex h-6">
-                Title
-              </Label>
+              <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
                 name="title"
                 value={newMeeting.title}
-                onChange={handleTitleChange}
+                onChange={(e) =>
+                  setNewMeeting({ ...newMeeting, title: e.target.value })
+                }
               />
             </div>
-
-            {/* User Single-Select */}
-            {/* <div className="items-center gap-4 ">
-              <Label htmlFor="users" className="text-right flex h-6">
-                Users
-              </Label>
-              <Select
-                id="users"
-                name="users"
-                value={newMeeting.user}
-                onValueChange={handleUserChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.name}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div> */}
 
             <div onClick={(e) => e.stopPropagation()}>
               <Label>Users</Label>
@@ -205,7 +137,9 @@ export default function AddMeetingDialog({
                   label: user.name,
                   value: user.name,
                 }))}
-                onValueChange={handleUsersChange}
+                onValueChange={(selectedUsers) =>
+                  setNewMeeting({ ...newMeeting, users: selectedUsers })
+                }
                 defaultValue={newMeeting.users}
                 placeholder="Select Users"
                 maxCount={3}
@@ -213,22 +147,25 @@ export default function AddMeetingDialog({
               />
             </div>
 
-            {/* Meeting Room Single-Select */}
             <div className="items-center gap-4">
-              <Label htmlFor="meetingroom" className="text-right flex h-6">
-                Meeting Room
-              </Label>
+              <Label htmlFor="meetingroom">Meeting Room</Label>
               <Select
                 name="meetingroom"
                 value={newMeeting.meetingroom}
-                onValueChange={handleMeetingRoomChange}
+                onValueChange={(value) =>
+                  setNewMeeting({ ...newMeeting, meetingroom: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
                   {meetingRooms.map((room) => (
-                    <SelectItem key={room.id} value={room.name}>
+                    <SelectItem
+                      key={room._id}
+                      value={room.name}
+                      className="cursor-pointer hover:bg-gray-100 whitespace-pre"
+                    >
                       {room.name}
                     </SelectItem>
                   ))}
@@ -236,30 +173,32 @@ export default function AddMeetingDialog({
               </Select>
             </div>
 
-            {/* Start Date Input */}
             <div className="items-center gap-4">
-              <Label htmlFor="date" className="flex gap-2 items-center h-10">
+              <Label htmlFor="date" className="flex gap-2 items-center">
                 <CalendarDays className="h-4 w-4" />
                 <p>Start Date And Time</p>
               </Label>
               <DateTimePicker
                 value={newMeeting.startTime}
-                onChange={handleStartTimeChange}
+                onChange={(date) =>
+                  setNewMeeting({ ...newMeeting, startTime: date })
+                }
               />
             </div>
 
-            {/* End Date Input */}
             <div className="items-center gap-4">
-              <Label htmlFor="date" className="flex gap-2 items-center h-10">
+              <Label htmlFor="date" className="flex gap-2 items-center">
                 <CalendarDays className="h-4 w-4" />
                 <p>End Date And Time</p>
               </Label>
               <DateTimePicker
                 value={newMeeting.endTime}
-                onChange={handleEndTimeChange}
+                onChange={(date) =>
+                  setNewMeeting({ ...newMeeting, endTime: date })
+                }
               />
             </div>
-            {/* Display error message if validation fails */}
+
             {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
             <DialogFooter>
               <Button type="submit">Add Meeting</Button>
